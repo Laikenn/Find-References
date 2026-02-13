@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jeu des references</title>
+  <style>
+    :root {
+      --bg-1: #080d14;
+      --bg-2: #0f1a27;
+      --glass: rgba(9, 16, 25, 0.64);
+      --line: rgba(176, 210, 240, 0.25);
+      --text: #eef6ff;
+      --accent: #5af0b2;
+      --danger: #ff7474;
+      --verified-icon-size: 34px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      color: var(--text);
+      font-family: "Segoe UI", "Trebuchet MS", sans-serif;
+      background:
+        radial-gradient(120% 90% at 50% 40%, #1a2a3f 0%, transparent 55%),
+        radial-gradient(80% 60% at 20% 90%, #123046 0%, transparent 62%),
+        linear-gradient(160deg, var(--bg-1), var(--bg-2));
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at center, transparent 45%, rgba(0, 0, 0, 0.44) 100%);
+      z-index: 0;
+    }
+
+    .stage {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      z-index: 1;
+    }
+
+    .image-wrap {
+      position: relative;
+      height: 100vh;
+      width: fit-content;
+      max-width: none;
+      animation: soft-in 650ms ease both;
+    }
+
+    #gameImage {
+      height: 100%;
+      width: auto;
+      display: block;
+      user-select: none;
+      -webkit-user-drag: none;
+      pointer-events: none;
+      border-left: 1px solid rgba(255, 255, 255, 0.08);
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.45);
+    }
+
+    .hit-zone {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      z-index: 5;
+      touch-action: manipulation;
+    }
+
+    .hit-zone:focus-visible {
+      outline: 2px dashed rgba(255, 255, 255, 0.9);
+      outline-offset: 4px;
+    }
+
+    body.debug .hit-zone {
+      background: rgba(255, 195, 0, 0.2);
+      border: 2px dashed rgba(255, 220, 120, 0.95);
+    }
+
+    .hit-zone.found::after {
+      content: "";
+      position: absolute;
+      inset: 50% auto auto 50%;
+      width: var(--verified-icon-size);
+      height: var(--verified-icon-size);
+      transform: translate(-50%, -50%) scale(0.25) rotate(-9deg);
+      border-radius: 50%;
+      background: url("verifie.png") center / contain no-repeat;
+      filter: drop-shadow(0 0 12px rgba(90, 240, 178, 0.9));
+      animation: stamp 420ms cubic-bezier(0.2, 1.2, 0.2, 1) forwards;
+      pointer-events: none;
+    }
+
+    .hit-zone.found {
+      cursor: pointer;
+    }
+
+    .zone-answer {
+      position: absolute;
+      left: 50%;
+      bottom: calc(100% + 10px);
+      transform: translate(-50%, 8px) scale(0.96);
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(7, 14, 24, 0.94);
+      border: 1px solid rgba(206, 228, 255, 0.4);
+      color: #f4fbff;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1;
+      white-space: nowrap;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.35);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 6;
+    }
+
+    .zone-answer.show {
+      animation: answer-fade 3000ms ease forwards;
+    }
+
+    .hud {
+      position: fixed;
+      left: 14px;
+      bottom: 14px;
+      z-index: 20;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 9px 14px;
+      border-radius: 999px;
+      background: var(--glass);
+      border: 1px solid var(--line);
+      backdrop-filter: blur(8px);
+      font-size: clamp(14px, 2vw, 20px);
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+      animation: soft-in 850ms ease both;
+    }
+
+    .hud-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #9effd7, #2ec98f);
+      box-shadow: 0 0 10px rgba(90, 240, 178, 0.8);
+    }
+
+    .mapper {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 20;
+      padding: 8px 12px;
+      border-radius: 12px;
+      background: var(--glass);
+      border: 1px solid var(--line);
+      backdrop-filter: blur(8px);
+      font-size: 12px;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      max-width: min(92vw, 560px);
+      opacity: 0;
+      transform: translateY(-8px);
+      pointer-events: none;
+      transition: opacity 220ms ease, transform 220ms ease;
+    }
+
+    body.debug .mapper {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 35;
+      display: grid;
+      place-items: center;
+      padding: 22px;
+      background: rgba(3, 8, 15, 0.55);
+      backdrop-filter: blur(5px);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 240ms ease, visibility 0s linear 240ms;
+    }
+
+    .overlay.active {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transition: opacity 240ms ease;
+    }
+
+    .finish-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 45;
+      display: grid;
+      place-items: center;
+      padding: 22px;
+      background: rgba(3, 8, 15, 0.68);
+      backdrop-filter: blur(7px);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 320ms ease, visibility 0s linear 320ms;
+    }
+
+    .finish-screen.active {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transition: opacity 320ms ease;
+    }
+
+    .finish-card {
+      position: relative;
+      width: min(620px, 92vw);
+      padding: clamp(24px, 4vw, 38px);
+      border-radius: 24px;
+      text-align: center;
+      color: #f4fcff;
+      border: 1px solid rgba(210, 232, 255, 0.35);
+      background: linear-gradient(140deg, rgba(13, 24, 37, 0.92), rgba(20, 35, 52, 0.88));
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+      transform: translateY(14px) scale(0.93);
+    }
+
+    .finish-screen.active .finish-card {
+      animation: finish-pop 600ms cubic-bezier(0.2, 1.1, 0.2, 1) forwards;
+    }
+
+    .finish-card::before {
+      content: "";
+      position: absolute;
+      inset: -2px;
+      background: conic-gradient(from 30deg, transparent 0deg 280deg, rgba(90, 240, 178, 0.55) 320deg 360deg);
+      filter: blur(14px);
+      opacity: 0.7;
+      animation: spin 6s linear infinite;
+      pointer-events: none;
+    }
+
+    .finish-title {
+      position: relative;
+      margin: 0 0 8px;
+      font-size: clamp(28px, 5vw, 56px);
+      line-height: 1.05;
+      letter-spacing: 0.3px;
+    }
+
+    .finish-sub {
+      position: relative;
+      margin: 0;
+      font-size: clamp(14px, 2.2vw, 20px);
+      color: rgba(222, 241, 255, 0.95);
+    }
+
+    .answer-box {
+      width: min(560px, 90vw);
+      padding: 10px;
+      border-radius: 999px;
+      background: linear-gradient(140deg, rgba(11, 20, 32, 0.88), rgba(20, 30, 45, 0.84));
+      border: 1px solid rgba(206, 228, 255, 0.35);
+      box-shadow: 0 26px 60px rgba(0, 0, 0, 0.45);
+      transform: translateY(14px) scale(0.95);
+      transition: transform 260ms cubic-bezier(0.18, 1, 0.2, 1);
+    }
+
+    .overlay.active .answer-box {
+      transform: translateY(0) scale(1);
+    }
+
+    #answerInput {
+      width: 100%;
+      border: none;
+      border-radius: 999px;
+      background: rgba(7, 14, 24, 0.92);
+      color: #f4fbff;
+      padding: 16px 22px;
+      font-size: clamp(20px, 3.8vw, 36px);
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      text-align: center;
+      outline: none;
+      transition: box-shadow 180ms ease, background 180ms ease;
+    }
+
+    #answerInput::placeholder {
+      color: rgba(201, 220, 240, 0.72);
+      font-weight: 600;
+    }
+
+    #answerInput:focus {
+      box-shadow: 0 0 0 2px rgba(90, 240, 178, 0.7);
+      background: rgba(9, 18, 30, 0.96);
+    }
+
+    #answerInput.invalid {
+      box-shadow: 0 0 0 2px rgba(255, 116, 116, 0.72);
+      animation: nudge 280ms ease;
+    }
+
+    @keyframes soft-in {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes stamp {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.25) rotate(-9deg);
+      }
+      70% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.12) rotate(3deg);
+      }
+      100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1) rotate(0deg);
+      }
+    }
+
+    @keyframes nudge {
+      0% { transform: translateX(0); }
+      30% { transform: translateX(-6px); }
+      60% { transform: translateX(6px); }
+      100% { transform: translateX(0); }
+    }
+
+    @keyframes finish-pop {
+      0% {
+        opacity: 0;
+        transform: translateY(14px) scale(0.9);
+      }
+      70% {
+        opacity: 1;
+        transform: translateY(-2px) scale(1.03);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes answer-fade {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, 8px) scale(0.96);
+      }
+      12% {
+        opacity: 1;
+        transform: translate(-50%, 0) scale(1);
+      }
+      78% {
+        opacity: 1;
+        transform: translate(-50%, 0) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -6px) scale(0.97);
+      }
+    }
+
+    @media (max-width: 820px) {
+      .hud {
+        left: 10px;
+        bottom: 10px;
+        padding: 8px 11px;
+      }
+
+      .answer-box {
+        width: min(520px, 92vw);
+      }
+
+      #answerInput {
+        padding: 14px 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage">
+    <div class="image-wrap" id="imageWrap">
+      <img id="gameImage" src="background.jpg" alt="Image de references" />
+    </div>
+  </main>
+
+  <div class="hud" id="counter" aria-live="polite">
+    <span class="hud-dot" aria-hidden="true"></span>
+    <span id="counterText">Trouves: 0 / 0</span>
+  </div>
+
+  <div class="mapper" id="mapper">Mode debug ON
+Clique sur l'image pour les coordonnees x/y en %</div>
+
+  <div class="overlay" id="overlay" aria-hidden="true">
+    <section class="answer-box" role="dialog" aria-modal="true">
+      <input
+        id="answerInput"
+        type="text"
+        autocomplete="off"
+        spellcheck="false"
+        placeholder="Ta réponse..."
+        aria-label="Entrer une réponse"
+      />
+    </section>
+  </div>
+
+  <div class="finish-screen" id="finishScreen" aria-hidden="true">
+    <section class="finish-card" role="status" aria-live="polite">
+      <h2 class="finish-title">Bravo !</h2>
+      <p class="finish-sub">Tu as trouve toutes les references.</p>
+    </section>
+  </div>
+
+  <script>
+    // x/y/w/h en pourcentage de l'image (w = largeur, h = hauteur)
+    // shapes possibles: "ellipse" ou "square"
+    // zoneShapeMode: "ellipse", "square" ou "target" (utilise target.shape)
+    const zoneShapeMode = "target";
+    const targets = [
+      {
+        id: "hercule-top",
+        label: "hercule",
+        answers: ["Hercule"],
+        x: 71.83,
+        y: 76.40,
+        w: 6,
+        h: 10,
+        shape: "ellipse"
+      },
+      {
+        id: "soul-top",
+        label: "soul",
+        answers: ["Soul"],
+        x: 81.47,
+        y: 78.9,
+        w: 10,
+        h: 15,
+        shape: "ellipse"
+      },
+      {
+        id: "Marnie-top",
+        label: "Marnie",
+        answers: ["Souvenirs de Marnie", "Marnie"],
+        x: 92.9,
+        y: 69.76,
+        w: 6,
+        h: 16,
+        shape: "ellipse"
+      },
+      {
+        id: "takopi-top",
+        label: "takopi",
+        answers: ["Takopi", "Le Péché originel de Takopi"],
+        x: 82.09,
+        y: 55.21,
+        w: 3,
+        h: 5,
+        shape: "ellipse"
+      },
+      {
+        id: "cendrillon-top",
+        label: "cendrillon",
+        answers: ["Cendrillon"],
+        x: 78.69,
+        y: 43.25,
+        w: 3,
+        h: 5,
+        shape: "ellipse"
+      },
+      {
+        id: "le roi lion-top",
+        label: "le roi lion",
+        answers: ["Le Roi Lion", "lion king"],
+        x: 57.98,
+        y: 94.18,
+        w: 8,
+        h: 12,
+        shape: "ellipse"
+      },
+      {
+        id: "dofus-top",
+        label: "dofus",
+        answers: ["Dofus"],
+        x: 70.78, y: 41.82,
+        w: 3,
+        h: 5,
+        shape: "ellipse"
+      },
+      {
+        id: "blanche-top",
+        label: "blanche",
+        answers: ["Blanche-Neige", "snow white", "blanche neige"],
+        x: 77.89, y: 26.13,
+        w: 6,
+        h: 12,
+        shape: "ellipse"
+      },
+      {
+        id: "la belle au bois dormant-top",
+        label: "la belle au bois dormant",
+        answers: ["La Belle au Bois Dormant","sleeping beauty"],
+        x: 84.13, y: 13.61,
+        w: 5,
+        h: 10,
+        shape: "ellipse"
+      },
+      {
+        id: "snk-top",
+        label: "snk",
+        answers: ["L'Attaque des Titans","snk",  "attack on titan", "shingeki no kyojin", "aot"],
+        x: 81.54, y: 63.12,
+        w: 2,
+        h: 5,
+        shape: "ellipse"
+      },
+      {
+        id: "inception-top",
+        label: "inception",
+        answers: ["Inception"],
+        x: 59.28, y: 64.43,
+        w: 2,
+        h: 5,
+        shape: "ellipse"
+      },
+      {
+        id: "harry-top",
+        label: "harry",
+        answers: ["Harry Potter"],
+        x: 61.7, y: 66.08,
+        w: 4,
+        h: 5,
+        shape: "ellipse"
+      },
+      {
+        id: "raiponce-top",
+        label: "raiponce",
+        answers: ["Raiponce","tangled"],
+        x: 56.37, y: 80.57,
+        w: 4,
+        h: 10,
+        shape: "ellipse"
+      },
+      {
+        id: "arrietty-top",
+        label: "arrietty",
+        answers: ["Arrietty : Le Petit Monde des Chapardeurs","Arrietty"],
+        x: 54.08, y: 71.46,
+        w: 4,
+        h: 5,
+        shape: "ellipse"
+      },
+      {
+        id: "frère-top",
+        label: "frère",
+        answers: ["Frère des Ours","brother bear"],
+        x: 58.10, y: 55.10,
+        w: 2,
+        h: 3,
+        shape: "ellipse"
+      },
+      {
+        id: "avatar-top",
+        label: "avatar",
+        answers: ["Avatar"],
+        x: 61.51, y: 34.36,
+        w: 10,
+        h: 15,
+        shape: "ellipse"
+      },
+      {
+        id: "princesse-top",
+        label: "princesse",
+        answers: ["Princesse Mononoke","mononoke"],
+        x: 50.00, y: 63.56,
+        w: 3,
+        h: 5,
+        shape: "ellipse"
+      },
+      {
+        id: "ori-top",
+        label: "ori",
+        answers: ["Ori and the Blind Forest","ori"],
+        x: 46.91, y: 54.54,
+        w: 3,
+        h: 5,
+        shape: "ellipse"
+      },
+      {
+        id: "peter-top",
+        label: "peter",
+        answers: ["Peter Pan"],
+        x: 44.31, y: 91.02,
+        w: 6,
+        h: 13,
+        shape: "ellipse"
+      },
+      {
+        id: "pirates-top",
+        label: "pirates",
+        answers: ["Pirates des Caraïbes"],
+        x: 32.01, y: 86.28,
+        w: 8,
+        h: 14,
+        shape: "ellipse"
+      },
+      {
+        id: "desperate housewives-top",
+        label: "desperate housewives",
+        answers: ["Desperate Housewives","dh"],
+        x: 41.22, y: 74.42,
+        w: 3,
+        h: 6,
+        shape: "ellipse"
+      },
+      {
+        id: "vice versa-top",
+        label: "vice versa",
+        answers: ["Vice-Versa","vice versa","inside out"],
+        x: 43.14, y: 74.97,
+        w: 1,
+        h: 5,
+        shape: "ellipse"
+      },
+      {
+        id: "zelda-top",
+        label: "zelda",
+        answers: ["The Legend of Zelda", "zelda"],
+        x: 20.44, y: 89.46,
+        w: 5,
+        h: 10,
+        shape: "ellipse"
+      },
+      {
+        id: "le pere noel est une ordure-top",
+        label: "le pere noel est une ordure",
+        answers: ["Le père noël est une ordure"],
+        x: 4.31, y: 83.97,
+        w: 15,
+        h: 13,
+        shape: "ellipse"
+      },
+      {
+        id: "le chateau ambulant-top",
+        label: "le chateau ambulant",
+        answers: ["Le Château Ambulant"],
+        x: 15.56, y: 46.10,
+        w: 5,
+        h: 8,
+        shape: "ellipse"
+      },
+      {
+        id: "mulan-top",
+        label: "mulan",
+        answers: ["Mulan"],
+        x: 8.94, y: 39.19,
+        w: 2,
+        h: 3,
+        shape: "ellipse"
+      },
+      {
+        id: "hunger-top",
+        label: "hunger",
+        answers: ["Hunger Games"],
+        x: 29.60, y: 31.72,
+        w: 6,
+        h: 10,
+        shape: "ellipse"
+      },
+      {
+        id: "la belle et la bete-top",
+        label: "la belle et la bete",
+        answers: ["La belle et la bête"],
+        x: 22.98, y: 4.83,
+        w: 3,
+        h: 5,
+        shape: "ellipse"
+      },
+      {
+        id: "le garçon et la bête-top",
+        label: "le garçon et la bête",
+        answers: ["Le garçon et la bête","le garcon et la bete"],
+        x: 37.02, y: 65.64,
+        w: 3,
+        h: 5,
+        shape: "ellipse"
+      },
+      {
+        id: "Parasite-top",
+        label: "Parasite",
+        answers: ["Parasite","parasyte"],
+        x: 36.03, y: 59.06,
+        w: 3,
+        h: 7,
+        shape: "ellipse"
+      },
+      {
+        id: "silksong-top",
+        label: "silksong",
+        answers: ["Silksong","Hollow Knight: Silksong","hollow knight"],
+        x: 40.17, y: 60.04,
+        w: 3,
+        h: 7,
+        shape: "ellipse"
+      },
+      {
+        id: "omori-top",
+        label: "omori",
+        answers: ["Omori"],
+        x: 61.01, y: 5.93,
+        w: 3,
+        h: 12,
+        shape: "ellipse"
+      },
+      {
+        id: "deathst-top",
+        label: "deathst",
+        answers: ["Death Stranding"],
+        x: 45.30, y: 48.30,
+        w: 6,
+        h: 7,
+        shape: "square"
+      },
+      {
+        id: "your-top",
+        label: "your",
+        answers: ["Your Name.", "your name"],
+        x: 40.23, y: 50.38,
+        w: 4,
+        h: 9,
+        shape: "square"
+      },
+      {
+        id: "death-top",
+        label: "death",
+        answers: ["Death Note"],
+        x: 35.84, y: 32.49,
+        w: 3,
+        h: 13,
+        shape: "square"
+      },
+      {
+        id: "interstellar-top",
+        label: "interstellar",
+        answers: ["Interstellar"],
+        x: 39.74, y: 33.26,
+        w: 4,
+        h: 13,
+        shape: "square"
+      },
+      {
+        id: "shutter-top",
+        label: "shutter",
+        answers: ["Shutter Island"],
+        x: 43.26, y: 34.25,
+        w: 3,
+        h: 12,
+        shape: "square"
+      },
+      {
+        id: "outer-top",
+        label: "outer",
+        answers: ["Outer Wilds"],
+        x: 49.81, y: 34.91,
+        w: 4,
+        h: 10,
+        shape: "square"
+      },
+      {
+        id: "alice-top",
+        label: "alice",
+        answers: ["Alice in Borderland"],
+        x: 44.00, y: 10.87,
+        w: 9,
+        h: 13,
+        shape: "square"
+      },
+      {
+        id: "vaiana-top",
+        label: "vaiana",
+        answers: ["Vaiana"],
+        x: 51.48, y: 80.24,
+        w: 3,
+        h: 9,
+        shape: "square"
+      },
+    ];
+
+
+
+
+
+
+
+    const imageWrap = document.getElementById("imageWrap");
+    const overlay = document.getElementById("overlay");
+    const finishScreen = document.getElementById("finishScreen");
+    const answerInput = document.getElementById("answerInput");
+    const mapper = document.getElementById("mapper");
+    const counterText = document.getElementById("counterText");
+
+    const zoneById = new Map();
+    const answerHideTimers = new Map();
+    let activeTarget = null;
+    let foundCount = 0;
+    let debugMode = false;
+
+    function normalize(value) {
+      return value
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+        .toLowerCase();
+    }
+
+    function updateCounter() {
+      counterText.textContent = `Trouvés: ${foundCount} / ${targets.length}`;
+    }
+
+    function updateMapper(text) {
+      mapper.textContent = text;
+    }
+
+    async function copyTextToClipboard(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+
+      const temp = document.createElement("textarea");
+      temp.value = text;
+      temp.setAttribute("readonly", "");
+      temp.style.position = "fixed";
+      temp.style.left = "-9999px";
+      document.body.appendChild(temp);
+      temp.select();
+
+      let copied = false;
+      try {
+        copied = document.execCommand("copy");
+      } catch (error) {
+        copied = false;
+      }
+
+      document.body.removeChild(temp);
+      return copied;
+    }
+
+    function closeOverlay() {
+      overlay.classList.remove("active");
+      overlay.setAttribute("aria-hidden", "true");
+      answerInput.value = "";
+      answerInput.classList.remove("invalid");
+      answerInput.placeholder = "Ta réponse...";
+      activeTarget = null;
+    }
+
+    function openOverlay(target) {
+      if (target.found) {
+        return;
+      }
+
+      activeTarget = target;
+      overlay.classList.add("active");
+      overlay.setAttribute("aria-hidden", "false");
+      answerInput.value = "";
+      answerInput.classList.remove("invalid");
+      answerInput.placeholder = "Ta réponse...";
+      setTimeout(() => answerInput.focus(), 30);
+    }
+
+    function markFound(target) {
+      const zone = zoneById.get(target.id);
+      if (!zone || target.found) {
+        return;
+      }
+
+      target.found = true;
+      zone.classList.add("found");
+      zone.setAttribute("aria-label", `${target.label} trouve`);
+      foundCount += 1;
+      updateCounter();
+      closeOverlay();
+      checkGameComplete();
+    }
+
+    function checkGameComplete() {
+      if (foundCount !== targets.length) {
+        return;
+      }
+      finishScreen.classList.add("active");
+      finishScreen.setAttribute("aria-hidden", "false");
+    }
+
+    function showFoundAnswer(target) {
+      const zone = zoneById.get(target.id);
+      if (!zone) {
+        return;
+      }
+
+      let badge = zone.querySelector(".zone-answer");
+      if (!badge) {
+        badge = document.createElement("span");
+        badge.className = "zone-answer";
+        zone.appendChild(badge);
+      }
+
+      badge.textContent = target.answers[0] || target.label || "Reponse";
+      badge.classList.remove("show");
+      void badge.offsetWidth;
+      badge.classList.add("show");
+
+      const previousTimer = answerHideTimers.get(target.id);
+      if (previousTimer) {
+        clearTimeout(previousTimer);
+      }
+
+      const timer = setTimeout(() => {
+        badge.classList.remove("show");
+        answerHideTimers.delete(target.id);
+      }, 3000);
+
+      answerHideTimers.set(target.id, timer);
+    }
+
+    function toggleDebugMode() {
+      debugMode = !debugMode;
+      document.body.classList.toggle("debug", debugMode);
+
+      if (debugMode) {
+        updateMapper("Mode debug ON\nClique sur l'image pour les coordonnees x/y en %\nCopie-colle ensuite dans targets[]");
+      }
+    }
+
+    function createZone(target) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "hit-zone";
+      btn.dataset.targetId = target.id;
+      const width = target.w ?? (target.r != null ? target.r * 2 : 8);
+      const height = target.h ?? (target.r != null ? target.r * 2 : 8);
+      const shape = zoneShapeMode === "target" ? (target.shape ?? "ellipse") : zoneShapeMode;
+      btn.style.left = `${target.x}%`;
+      btn.style.top = `${target.y}%`;
+      btn.style.width = `${width}%`;
+      btn.style.height = `${height}%`;
+      btn.style.borderRadius = shape === "square" ? "12%" : "50%";
+      btn.setAttribute("aria-label", `Zone a trouver: ${target.label}`);
+      btn.addEventListener("click", () => {
+        if (target.found) {
+          showFoundAnswer(target);
+          return;
+        }
+        openOverlay(target);
+      });
+
+      imageWrap.appendChild(btn);
+      zoneById.set(target.id, btn);
+    }
+
+    function handleWrongAnswer() {
+      answerInput.classList.remove("invalid");
+      void answerInput.offsetWidth;
+      answerInput.classList.add("invalid");
+      answerInput.value = "";
+      answerInput.placeholder = "Non...";
+      answerInput.focus();
+    }
+
+    targets.forEach((target) => {
+      target.found = false;
+      target.normalizedAnswers = target.answers.map(normalize);
+      createZone(target);
+    });
+
+    answerInput.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" || !activeTarget) {
+        return;
+      }
+
+      const value = normalize(answerInput.value);
+      const ok = activeTarget.normalizedAnswers.includes(value);
+
+      if (ok) {
+        markFound(activeTarget);
+      } else {
+        handleWrongAnswer();
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && overlay.classList.contains("active")) {
+        closeOverlay();
+      }
+
+      if (event.key.toLowerCase() === "²") {
+        toggleDebugMode();
+      }
+    });
+
+    imageWrap.addEventListener("click", async (event) => {
+      if (!debugMode) {
+        return;
+      }
+
+      const rect = imageWrap.getBoundingClientRect();
+      const x = ((event.clientX - rect.left) / rect.width) * 100;
+      const y = ((event.clientY - rect.top) / rect.height) * 100;
+
+      const xText = x.toFixed(2);
+      const yText = y.toFixed(2);
+      const coordText = `x: ${xText}, y: ${yText}`;
+      const copied = await copyTextToClipboard(coordText);
+      const copyStatus = copied ? "Coordonnees copiees dans le presse-papiers" : "Impossible de copier automatiquement";
+
+      updateMapper(
+        `Mode debug ON\nPoint: x=${xText}, y=${yText}\n${copyStatus}\nExemple: { id: "id", label: "Nom", answers: ["nom"], x: ${xText}, y: ${yText}, w: 8, h: 8, shape: "ellipse" }`
+      );
+    });
+
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay) {
+        closeOverlay();
+      }
+    });
+
+    finishScreen.addEventListener("click", () => {
+      finishScreen.classList.remove("active");
+      finishScreen.setAttribute("aria-hidden", "true");
+    });
+
+    updateCounter();
+  </script>
+</body>
+</html>
