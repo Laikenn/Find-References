@@ -419,6 +419,8 @@
     const counterSpan = document.getElementById("counterText");
     const mapperDiv   = document.getElementById("mapper");
     const cursorDiv   = document.getElementById("customCursor");
+    const successSound = new Audio("success.mp3");
+    successSound.volume = 0.3; // optionnel (0 à 1)
 
     // ─── ÉTAT ZOOM/PAN ──────────────────────────────────────────────────────────
     // On stocke : scale + offset (ox, oy) = translation en px du coin haut-gauche
@@ -659,6 +661,8 @@
 
     function markFound(target) {
       if (target.found) return;
+      successSound.currentTime = 0; // permet de rejouer instantanément
+      successSound.play();
       const zone = zoneMap.get(target.id);
       if (!zone) return;
       target.found = true;
