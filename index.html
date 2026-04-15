@@ -70,15 +70,15 @@
 
     /* Zones cliquables */
     .hit-zone {
-      position: absolute;
-      transform: translate(-50%, -50%);
-      border-radius: 50%;
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      touch-action: manipulation;
-      z-index: 5;
-    }
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  cursor: none; /* 👈 au lieu de pointer */
+  touch-action: manipulation;
+  z-index: 5;
+}
     .hit-zone:focus-visible {
       outline: 2px dashed rgba(255,255,255,0.9);
       outline-offset: 4px;
@@ -728,7 +728,7 @@
       window.addEventListener("mousemove",  moveDrag);
       window.addEventListener("mouseup",    stopDrag);
       stage.addEventListener("dblclick",    resetZoom);
-      zoomPan.addEventListener("contextmenu", showMagnifier);
+      stage.addEventListener("contextmenu", (e) => e.preventDefault());
 
       // Curseur custom
       document.addEventListener("mousemove", (e) => {
