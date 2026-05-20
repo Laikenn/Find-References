@@ -66,6 +66,8 @@
       box-shadow: 0 18px 42px rgba(0,0,0,0.5);
       border-left:  1px solid rgba(255,255,255,0.08);
       border-right: 1px solid rgba(255,255,255,0.08);
+        image-rendering: auto;
+  image-rendering: high-quality;
     }
 
     /* Zones cliquables */
@@ -330,7 +332,7 @@
   <main class="stage" id="stage">
     <div class="custom-cursor" id="customCursor"></div>
     <div id="zoomPan">
-      <img id="gameImage" src="background2.png" alt="Image des références" />
+      <img id="gameImage" src="background3.jpg" alt="Image des références" />
     </div>
   </main>
 
@@ -356,7 +358,7 @@
 
   <script>
     // ─── DONNÉES ───────────────────────────────────────────────────────────────
-    const targetsData = [
+    const targetsData_Jeremie = [
       { id: "Gris-top", label: "Gris", answers: ["Gris"], x: 91.92, y: 25, w: 4, h: 9, shape: "ellipse" },
       { id: "Portal-top", label: "Portal", answers: ["Portal", "Portal 2"], x: 55.69, y: 0.88, w: 9, h: 10, shape: "ellipse" },
       { id: "Spyro-top", label: "Spyro", answers: ["Spyro"], x: 31.14, y: 64.54, w: 3, h: 7, shape: "ellipse" },
@@ -407,6 +409,59 @@
       { id: "Divinity-top", label: "Divinity", answers: ["Divinity 2","Divinity","Divinity II"], x: 38.13, y: 22.50, w: 5, h: 10, shape: "ellipse" },
       { id: "Clair-top", label: "Clair", answers: ["Clair Obscur","Clair obscur expedition 33"], x: 85.18, y: 37.10, w: 2, h: 2, shape: "ellipse" },
       { id: "Outer-top", label: "Outer", answers: ["Outer Wilds"], x: 39.74, y: 45.00, w: 8, h: 7, shape: "ellipse" }
+    ];
+
+    const targetsData = [
+      { id: "1-top", label: "1", answers: ["Cyberpunk 2077","Cyberpunk"], x: 92.41, y: 10.10, w: 5, h: 10, shape: "ellipse" },
+      { id: "2-top", label: "2", answers: ["Clair Obscur: Expedition 33", "Clair Obscur","Expedition 33"], x: 64.67, y: 20.42, w: 6, h: 7, shape: "ellipse" },
+      { id: "3-top", label: "3", answers: ["Outer Wilds","OW"], x: 14.83, y: 52.69, w: 4, h: 9, shape: "ellipse" },
+      { id: "4-top", label: "4", answers: ["Elden Ring","ER"], x: 55.80, y: 14.83, w: 1, h: 2, shape: "ellipse" },
+      { id: "5-top", label: "5", answers: ["The Last of Us","TLOU"], x: 80.77, y: 64.75, w: 10, h: 32, shape: "ellipse" },
+      { id: "6-top", label: "6", answers: ["Sekiro"], x: 41.56, y: 80.63, w: 5, h: 8, shape: "ellipse" },
+      { id: "7-top", label: "7", answers: ["Dark Souls 3","DS3"], x: 43.13, y: 4.50, w: 6, h: 5, shape: "ellipse" },
+      { id: "8-top", label: "8", answers: ["Assassin's Creed: Black Flag","Black Flag","AC4"], x: 97.43, y: 36.66, w: 5, h: 15, shape: "ellipse" },
+      { id: "9-top", label: "9", answers: ["Tunic"], x: 86.59, y: 86.39, w: 17, h: 8, shape: "square" },
+      { id: "10-top", label: "10", answers: ["Detroit: Become Human","Detroit"], x: 86.16, y: 40.72, w: 6, h: 6, shape: "ellipse" },
+      { id: "11-top", label: "11", answers: ["Return of the Obra Dinn","Obra Dinn"], x: 57.24, y: 34.31, w: 1, h: 2, shape: "ellipse" },
+      { id: "12-top", label: "12", answers: ["Balatro"], x: 30.58, y: 64.06, w: 3, h: 8, shape: "ellipse" },
+      { id: "13-top", label: "13", answers: ["Undertale"], x: 71.61, y: 41.75, w: 1.5, h: 3, shape: "square" },
+      { id: "14-top", label: "14", answers: ["Dredge"], x: 20.48, y: 23.09, w: 3, h: 5, shape: "ellipse" },
+      { id: "15-top", label: "15", answers: ["Dave the Diver"], x: 40.60, y: 32.88, w: 3, h: 9, shape: "ellipse" },
+      { id: "16-top", label: "16", answers: ["Rainbow Six Siege","R6","rainbow six"], x: 27.34, y: 44.57, w: 4, h: 4, shape: "ellipse" },
+      { id: "17-top", label: "17", answers: ["CS:GO","CS","CS2"], x: 32.71, y: 56.82, w: 10, h: 5, shape: "square" },
+      { id: "18-top", label: "18", answers: ["League of Legends","Lol"], x: 77.78, y: 32.82, w: 2, h: 3, shape: "ellipse" },
+      { id: "19-top", label: "19", answers: ["Payday 2"], x: 52.36, y: 31.76, w: 2, h: 2, shape: "ellipse" },
+      { id: "20-top", label: "20", answers: ["Metal Gear Solid","MGS"], x: 99.66, y: 58.18, w: 10, h: 11, shape: "ellipse" },
+      { id: "21-top", label: "21", answers: ["Escape Simulator","ES"], x: 87.32, y: 67.04, w: 2, h: 6, shape: "square" },
+      { id: "22-top", label: "22", answers: ["Inscryption"], x: 40.49, y: 44.70, w: 2, h: 3, shape: "ellipse" },
+      { id: "23-top", label: "23", answers: ["Hitman"], x: 57.66, y: 42.80, w: 1.5, h: 4, shape: "ellipse" },
+      { id: "24-top", label: "24", answers: ["Ori and the Blind Forest","Ori"], x: 9.99, y: 29.15, w: 3, h: 5, shape: "ellipse" },
+      { id: "25-top", label: "25", answers: ["Red Dead Redemption 2","Red dead 2","RDR2"], x: 47.41, y: 34.82, w: 2, h: 4, shape: "ellipse" },
+      { id: "26-top", label: "26", answers: ["Lego Voyagers"], x: 34.17, y: 69.46, w: 2, h: 3, shape: "ellipse" },
+      { id: "27-top", label: "27", answers: ["Pico Park"], x: 50.30, y: 50.78, w: 2, h: 4, shape: "ellipse" },
+      { id: "28-top", label: "28", answers: ["Rocket League","RL","rocket"], x: 43.89, y: 36.64, w: 2, h: 3, shape: "ellipse" },
+      { id: "29-top", label: "29", answers: ["Dead by Daylight","DBD"], x: 39.93, y: 50.24, w: 8, h: 9, shape: "ellipse" },
+      { id: "30-top", label: "30", answers: ["Celeste"], x: 50.77, y: 16.99, w: 9, h: 18, shape: "ellipse" },
+      { id: "31-top", label: "31", answers: ["Hades"], x: 61.64, y: 64.87, w: 2, h: 7, shape: "ellipse" },
+      { id: "32-top", label: "32", answers: ["Lies of P"], x: 92.44, y: 40.96, w: 2, h: 3, shape: "ellipse" },
+      { id: "33-top", label: "33", answers: ["For The King"], x: 58.46, y: 53.53, w: 6, h: 6, shape: "square" },
+      { id: "34-top", label: "34", answers: ["Unrailed"], x: 1.21, y: 99.45, w: 3, h: 4, shape: "ellipse" },
+      { id: "35-top", label: "35", answers: ["Human Fall Flat"], x: 0.83, y: 9.00, w: 5, h: 8, shape: "ellipse" },
+      { id: "36-top", label: "36", answers: ["Ultimate Chicken Horse","Chicken horse","UCH"], x: 28.76, y: 37.89, w: 2, h: 3, shape: "ellipse" },
+      { id: "37-top", label: "37", answers: ["Kallax"], x: 15.68, y: 64.84, w: 4, h: 6, shape: "ellipse" },
+      { id: "38-top", label: "38", answers: ["Resident Evil 2","RE2"], x: 53.49, y: 45.85, w: 3, h: 5, shape: "ellipse" },
+      { id: "39-top", label: "39", answers: ["Mon Voisin Totoro","Totoro"], x: 21.97, y: 43.32, w: 3, h: 5, shape: "ellipse" },
+      { id: "40-top", label: "40", answers: ["Pokémon","Ronflex"], x: 4.97, y: 46.29, w: 5, h: 8, shape: "ellipse" },
+      { id: "41-top", label: "41", answers: ["Kiki la petite sorcière","Jiji"], x: 98.78, y: 98.20, w: 3, h: 6, shape: "square" },
+      { id: "42-top", label: "42", answers: ["Kingdom"], x: 6.45, y: 61.51, w: 7, h: 14, shape: "ellipse" },
+      { id: "43-top", label: "43", answers: ["Initial D"], x: 63.54, y: 40.26, w: 2, h: 3, shape: "ellipse" },
+      { id: "44-top", label: "44", answers: ["L'attaque des titans","SNK","Attack on titan","AOT","Shingeki","Shingeki no kyojin"], x: 44.34, y: 68.33, w: 5, h: 9, shape: "ellipse" },
+      { id: "45-top", label: "45", answers: ["Solo Leveling"], x: 67.69, y: 97.94, w: 6, h: 11, shape: "ellipse" },
+      { id: "46-top", label: "46", answers: ["Chateau Ambulant"], x: 68.60, y: 0.57, w: 3, h: 4, shape: "ellipse" },
+      { id: "47-top", label: "47", answers: ["Ponyo sur la falaise"], x: 21.70, y: 98.68, w: 12, h: 7, shape: "ellipse" },
+      { id: "48-top", label: "48", answers: ["Kuroko no basket","kuroko","kuroko's basket"], x: 53.62, y: 35.57, w: 2, h: 3, shape: "ellipse" },
+      { id: "49-top", label: "49", answers: ["Parasyte","Parasite"], x: 84.16, y: 11.27, w: 2, h: 4, shape: "ellipse" },
+      { id: "50-top", label: "50", answers: ["Your Name","kimi non na wa"], x: 57.75, y: 29.81, w: 3, h: 5, shape: "ellipse" }
     ];
 
     // ─── DOM ────────────────────────────────────────────────────────────────────
@@ -674,7 +729,11 @@
     }
 
     function normalize(str) {
-      return str.normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase();
+      return str
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")  // accents
+        .replace(/[\s:;.\-']/g, "")       // espaces, :  ;  .  -  '
+        .toLowerCase();
     }
 
     // ─── MODE DEBUG ───────────────────────────────────────────────────────────
@@ -707,6 +766,7 @@
       const winW = window.innerWidth;
       const winH = window.innerHeight;
       const ratio = Math.min(winW / imgW, winH / imgH, 1); // pas d'upscale
+      
       imgW = Math.round(imgW * ratio);
       imgH = Math.round(imgH * ratio);
       gameImg.style.width  = imgW + "px";
